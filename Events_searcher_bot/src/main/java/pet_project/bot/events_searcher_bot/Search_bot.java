@@ -59,7 +59,6 @@ public class Search_bot extends TelegramLongPollingBot{
 
                 sendMsg(update.getMessage().getChatId(), "Выберите с чего начать", 2);
             } else if(set_reguistered_profilers.contains(update.getMessage().getChatId())) {
-                System.out.println("fdsfsdfds");
                 if(update.getMessage().getText().equals("Редактирование профиля")){
                     sendMsg(update.getMessage().getChatId(), "Функционал пока не работает", 3);
                 } else if(update.getMessage().getText().equals("Создание события")){
