@@ -16,11 +16,17 @@ import java.util.*;
 
 @Component
 public class Search_bot extends TelegramLongPollingBot{
-
+    private static long id_counter = 0;
     Map<Long, Map<String, Boolean>> map_of_registering = new HashMap<>();
 
+    Map<Long, Map<String, Boolean>> map_of_registering_events = new HashMap<>();
+
     Map<Long, Profile> map_profiles = new HashMap<>();
+
+    Map<Long, Event> map_events = new HashMap<>();
     public Set<Long> set_reguistered_profilers = new HashSet<>();
+
+
 
     final BotConfig botConfig;
 
@@ -61,8 +67,42 @@ public class Search_bot extends TelegramLongPollingBot{
             } else if(set_reguistered_profilers.contains(update.getMessage().getChatId())) {
                 if(update.getMessage().getText().equals("Редактирование профиля")){
                     sendMsg(update.getMessage().getChatId(), "Функционал пока не работает", 3);
-                } else if(update.getMessage().getText().equals("Создание события")){
-                    sendMsg(update.getMessage().getChatId(), "Функционал пока не работает", 3);
+                } else if(update.getMessage().getText().equals("Создание события")
+                        && !map_of_registering_events.containsKey(update.getMessage().getChatId())
+                        && !map_events.containsKey(update.getMessage().getChatId())){
+                    Event event = new Event();
+                    event.setId(id_counter++);
+                    event.setPlayer_id(update.getMessage().getChatId());
+                    map_events.put(update.getMessage().getChatId(), event);
+
+                    Map<String, Boolean> map = new HashMap<>();
+                    map.put("Название", false);
+                    map.put("Игра", false);
+                    map.put("Описание", false);
+                    map.put("Критерии", false);
+
+                    map_of_registering_events.put(update.getMessage().getChatId(), map);
+
+                    sendMsg(update.getMessage().getChatId(), "Выберите с чего начать", 4);
+                }else if(map_of_registering_events.containsKey(update.getMessage().getChatId())){
+                    if(!map_of_registering_events.get(update.getMessage().getChatId()).containsValue(true)){
+                        Map<String, Boolean> map = map_of_registering_events.get(update.getMessage().getChatId());
+                        map.put(update.getMessage().getText(), true);
+                    }else{
+                        Map<String, Boolean> map = map_of_registering_events.get(update.getMessage().getChatId());
+                        String text = getKeyByValue(map, true);
+                        map.remove(text);
+
+                        Event event = map_events.get(update.getMessage().getChatId());
+                        set_in_event(event, text, update.getMessage().getText());
+                        if(map.size() == 0) {
+                            map_of_registering_events.remove(update.getMessage().getChatId());
+                            sendMsg(update.getMessage().getChatId(), "Поздравляем!! "
+                                    + event.getName() + " всем разослан", 3);
+                        }else{
+                            sendMsg(update.getMessage().getChatId(), "Готово", 4);
+                        }
+                    }
                 }else{
                     sendMsg(update.getMessage().getChatId(), "Добрый день", 3);
                 }
@@ -91,6 +131,23 @@ public class Search_bot extends TelegramLongPollingBot{
 
 
     }
+
+
+
+    public void set_in_event(Event event, String text, String message){
+        if(text.equals("Название")){
+            event.setName(message);
+        }else if(text.equals("Игра")){
+            event.setGame(message);
+        }else if(text.equals("Описанние")){
+            event.setDescription(message);
+        }else{
+            event.setDescription(message);
+        }
+    }
+
+
+
 
 
     public void set_in_profile(Profile profile, String text, String message){
@@ -135,7 +192,7 @@ public class Search_bot extends TelegramLongPollingBot{
         replyKeyboardMarkup.setSelective(true);
         replyKeyboardMarkup.setResizeKeyboard(true);
         replyKeyboardMarkup.setOneTimeKeyboard(true);
-
+        long id = Long.parseLong(message.getChatId());
         // Создаем список строк клавиатуры
         List<KeyboardRow> keyboard = new ArrayList<>();
 
@@ -148,7 +205,7 @@ public class Search_bot extends TelegramLongPollingBot{
                 replyKeyboardMarkup.setKeyboard(keyboard);
                 break;
             case 2 :
-                long id = Long.parseLong(message.getChatId());
+
 
                 KeyboardRow row = new KeyboardRow();
                 Map<String, Boolean> map = map_of_registering.get(id);
@@ -166,6 +223,16 @@ public class Search_bot extends TelegramLongPollingBot{
                 first_3.add(new KeyboardButton("Создание события"));
                 keyboard.add(second_3);
                 keyboard.add(first_3);
+                replyKeyboardMarkup.setKeyboard(keyboard);
+                break;
+            case 4 :
+                KeyboardRow row_4  = new KeyboardRow();
+                Map<String, Boolean> map_4 = map_of_registering_events.get(id);
+                for(String key : map_4.keySet()){
+                    row_4.add(new KeyboardButton(key));
+                }
+
+                keyboard.add(row_4);
                 replyKeyboardMarkup.setKeyboard(keyboard);
                 break;
 
