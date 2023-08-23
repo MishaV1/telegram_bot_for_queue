@@ -1,5 +1,6 @@
 package pet_project.bot.events_searcher_bot;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
@@ -11,6 +12,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import pet_project.bot.events_searcher_bot.config.BotConfig;
+import pet_project.bot.events_searcher_bot.rabbitMQ.RabbitMQProduceServiceImpl;
 
 import java.util.*;
 
@@ -26,7 +28,8 @@ public class Search_bot extends TelegramLongPollingBot{
     Map<Long, Event> map_events = new HashMap<>();
     public Set<Long> set_reguistered_profilers = new HashSet<>();
 
-
+    @Autowired
+    private RabbitMQProduceServiceImpl rabbitMQProduceService;
 
     final BotConfig botConfig;
 
@@ -97,6 +100,7 @@ public class Search_bot extends TelegramLongPollingBot{
                         set_in_event(event, text, update.getMessage().getText());
                         if(map.size() == 0) {
                             map_of_registering_events.remove(update.getMessage().getChatId());
+                            rabbitMQProduceService.sendMessage(event.toString(), "event");
                             sendMsg(update.getMessage().getChatId(), "Поздравляем!! "
                                     + event.getName() + " всем разослан", 3);
                         }else{
@@ -120,6 +124,7 @@ public class Search_bot extends TelegramLongPollingBot{
                 if(map.size() == 0) {
                     map_of_registering.remove(update.getMessage().getChatId());
                     set_reguistered_profilers.add(update.getMessage().getChatId());
+                    rabbitMQProduceService.sendMessage(profile.toString(), "player");
                     sendMsg(update.getMessage().getChatId(), "Поздравляем Вы прошли регистрацию "
                             + profile.getName(), 3);
                 }else{
